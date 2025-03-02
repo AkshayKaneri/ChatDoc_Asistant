@@ -1,12 +1,14 @@
 const express = require("express");
 const multer = require("multer");
-const { uploadPDF, queryPDF } = require("../controllers/pdfController");
+const { uploadPDF, queryNamespace } = require("../controllers/pdfController");
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Use controllers in routes
-router.post("/upload", upload.single("pdf"), uploadPDF);
-router.post("/query", queryPDF);
+// ✅ Supports multiple file uploads
+router.post("/upload", upload.array("pdf", 5), uploadPDF);
+
+// ✅ Query from a namespace
+router.post("/query", queryNamespace);
 
 module.exports = router;

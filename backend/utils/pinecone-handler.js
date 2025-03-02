@@ -5,29 +5,33 @@ const { Pinecone } = require("@pinecone-database/pinecone");
 const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
 
-// Function to store embeddings in Pinecone
-async function storeEmbeddings(embeddings) {
+// 📌 Store Embeddings in Pinecone under a Namespace
+async function storeEmbeddings(embeddings, namespace) {
     try {
         for (const data of embeddings) {
-            await index.upsert([
+            await index.namespace(namespace).upsert([
                 {
                     id: data.id,
                     values: data.embedding,
-                    metadata: { text: data.chunk },
+                    metadata: {
+                        text: data.chunk,
+                        pdfName: data.pdfName,  // ✅ Store PDF Name
+                        pageNumber: data.pageNumber  // ✅ Store Page Number
+                    },
                 },
             ]);
         }
-        console.log("✅ Embeddings stored in Pinecone successfully!");
+        console.log(`✅ Embeddings stored in Pinecone under namespace: '${namespace}'`);
     } catch (error) {
         console.error("❌ Error storing embeddings in Pinecone:", error);
     }
 }
 
-// Function to query Pinecone
-async function queryPinecone(queryEmbedding, topK = 5) {
+// 📌 Query Pinecone Within a Namespace
+async function queryPinecone(queryEmbedding, namespace, topK = 10) {
     try {
-        console.log("🔍 Searching Pinecone for relevant text...");
-        const searchResults = await index.query({
+        console.log(`🔍 Searching Pinecone in namespace '${namespace}'...`);
+        const searchResults = await index.namespace(namespace).query({
             vector: queryEmbedding,
             topK: topK,
             includeMetadata: true,
