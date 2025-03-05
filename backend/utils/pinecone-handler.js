@@ -44,4 +44,30 @@ async function queryPinecone(queryEmbedding, namespace, topK = 10) {
     }
 }
 
-module.exports = { storeEmbeddings, queryPinecone };
+// 📌 Get all the namespace from Pinecone
+async function getNamespace() {
+    try {
+        const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
+        const stats = await index.describeIndexStats();
+        if (!stats || !stats.namespaces) {
+            return [];
+        }
+        return Object.keys(stats.namespaces);
+    } catch (error) {
+        console.error("❌ Error processing query:", error);
+        throw error;
+    }
+}
+
+// 📌 Delete the Namespace
+async function deleteRequestedNameSpace(ns) {
+    try {
+        const pineconeindex = pinecone.index(process.env.PINECONE_INDEX_NAME);
+        await pineconeindex.namespace(ns).deleteAll();
+        return true;
+    } catch (error) {
+        console.error("❌ Error processing query:", error);
+        throw error;
+    }
+}
+module.exports = { storeEmbeddings, queryPinecone, getNamespace, deleteRequestedNameSpace };

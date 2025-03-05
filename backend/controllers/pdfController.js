@@ -1,7 +1,8 @@
 const pdfParse = require("pdf-parse");
 const { OpenAI } = require("openai");
-const { storeEmbeddings, queryPinecone } = require("../utils/pinecone-handler");
+const { storeEmbeddings, queryPinecone, getNamespace, deleteRequestedNameSpace } = require("../utils/pinecone-handler");
 const { splitText } = require("../utils/text-chunker");
+const Chat = require("../models/chatModel");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -21,25 +22,20 @@ async function uploadPDF(req, res) {
                     continue;
                 }
                 console.log(`📂 Processing '${file.originalname}' in namespace '${namespace}'`);
-                // Extract filename without extension
                 const pdfName = file.originalname.replace(/\.[^/.]+$/, "");
 
-                // Parse the PDF from the file buffer
                 const pdfData = await pdfParse(file.buffer);
-
                 if (!pdfData.text.trim()) {
                     console.warn(`⚠️ PDF '${file.originalname}' contains no extractable text. Skipping.`);
                     continue;
                 }
 
-                // ✅ Get text chunks (No Page Numbers)
                 const textChunks = await splitText(pdfData);
                 if (textChunks.length === 0) {
                     console.warn(`⚠️ No meaningful text found in '${file.originalname}'. Skipping.`);
                     continue;
                 }
 
-                // Generate embeddings
                 let embeddings = [];
                 for (let i = 0; i < textChunks.length; i++) {
                     const response = await openai.embeddings.create({
@@ -51,11 +47,10 @@ async function uploadPDF(req, res) {
                         id: `${pdfName}-chunk-${i}`,
                         chunk: textChunks[i],
                         embedding: response.data[0].embedding,
-                        pdfName: pdfName, // ✅ Store only PDF name
+                        pdfName: pdfName,
                     });
                 }
 
-                // Store embeddings for this PDF
                 allEmbeddings.push(...embeddings);
 
             } catch (error) {
@@ -63,7 +58,6 @@ async function uploadPDF(req, res) {
             }
         }
 
-        // ✅ Store all embeddings in Pinecone under the namespace
         if (allEmbeddings.length > 0) {
             await storeEmbeddings(allEmbeddings, namespace);
             res.json({ message: `All PDFs uploaded and stored in namespace '${namespace}' successfully!` });
@@ -77,7 +71,7 @@ async function uploadPDF(req, res) {
     }
 }
 
-// 📌 Query API → Retrieve Relevant Chunks from a Namespace → Generate Answer
+// 📌 Query API → Retrieve Chat History + Process New Query
 async function queryNamespace(req, res) {
     try {
         const { question, namespace } = req.body;
@@ -85,49 +79,43 @@ async function queryNamespace(req, res) {
 
         console.log(`🔍 User asked: "${question}" in namespace: '${namespace}'`);
 
-        // Convert question to embedding
+        await saveChatMessage(namespace, "user", question);
+
         const response = await openai.embeddings.create({
             model: "text-embedding-ada-002",
             input: question,
         });
         const queryEmbedding = response.data[0].embedding;
 
-        // Query Pinecone in the given namespace
         const searchResults = await queryPinecone(queryEmbedding, namespace, 15);
-
         if (!searchResults.matches.length) {
             console.log("❌ No relevant chunks found in namespace.");
             return res.json({ answer: "I couldn't find relevant information in this namespace." });
         }
 
-        // Extract retrieved text and PDF name
         let retrievedChunks = searchResults.matches.map(match => ({
             text: match.metadata.text,
             pdfName: match.metadata.pdfName,
             score: match.score
         }));
 
-        // ✅ Step 1: Group results by PDF Name and pick the most relevant one
         const groupedByPDF = retrievedChunks.reduce((acc, chunk) => {
             if (!acc[chunk.pdfName]) acc[chunk.pdfName] = [];
             acc[chunk.pdfName].push(chunk);
             return acc;
         }, {});
 
-        // ✅ Step 2: Pick the highest-ranked PDF
         const sortedPDFs = Object.keys(groupedByPDF).sort((a, b) => {
             const avgScoreA = groupedByPDF[a].reduce((sum, c) => sum + c.score, 0) / groupedByPDF[a].length;
             const avgScoreB = groupedByPDF[b].reduce((sum, c) => sum + c.score, 0) / groupedByPDF[b].length;
             return avgScoreB - avgScoreA;
         });
 
-        const bestPDF = sortedPDFs[0];  // Select the top-ranked PDF
-        retrievedChunks = groupedByPDF[bestPDF];  // Use only chunks from the most relevant PDF
+        const bestPDF = sortedPDFs[0];
+        retrievedChunks = groupedByPDF[bestPDF];
 
-        // ✅ Step 3: Format retrieved text for GPT prompt
         const retrievedTextForGPT = retrievedChunks.map(chunk => chunk.text).join("\n\n").slice(0, 6000);
 
-        // ✅ Step 4: Generate response using OpenAI
         console.log("🤖 Generating AI response...");
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
@@ -137,10 +125,13 @@ async function queryNamespace(req, res) {
             ],
         });
 
-        // ✅ Ensure only **one PDF name** is returned
+        const responseText = aiResponse.choices[0].message.content;
+
+        await saveChatMessage(namespace, "assistant", responseText);
+
         res.json({
-            answer: aiResponse.choices[0].message.content,
-            source: { pdfName: bestPDF }  // ✅ Return only the best-matching PDF name
+            answer: responseText,
+            source: { pdfName: bestPDF }
         });
 
     } catch (error) {
@@ -149,4 +140,65 @@ async function queryNamespace(req, res) {
     }
 }
 
-module.exports = { uploadPDF, queryNamespace };
+// 📌 Namespaces list API → Retrieve Relevant existing namespaces
+async function getNamespaces(req, res) {
+    try {
+        const stats = await getNamespace();
+        return res.json(stats);
+    } catch (error) {
+        console.error("❌ Error fetching namespaces:", error);
+        return res.status(500).json({ error: "Failed to fetch namespaces" });
+    }
+}
+
+// 📌 Delete Namespace → Delete the namespace user requested
+async function deleteNamespace(req, res) {
+    try {
+        const { namespace } = req.params;
+        if (!namespace) {
+            return res.status(400).json({ error: "Namespace parameter is required" });
+        }
+        const deletedStatus = await deleteRequestedNameSpace(namespace);
+        return res.json(deletedStatus);
+    } catch (error) {
+        console.error("❌ Error deleting namespace:", error);
+        return res.status(500).json({ error: "Failed to delete namespace" });
+    }
+}
+
+// 📌 Save Chat Messages to MongoDB
+async function saveChatMessage(namespace, sender, text) {
+    try {
+        let chat = await Chat.findOne({ namespace });
+
+        if (!chat) {
+            chat = new Chat({ namespace, messages: [] });
+        }
+
+        chat.messages.push({ sender, message: text.trim() });
+        await chat.save();
+    } catch (error) {
+        console.error(`❌ Error saving chat: ${error.message}`);
+    }
+}
+
+// 📌 Get Chat History from MongoDB
+async function getChatHistory(req, res) {
+    try {
+        const { namespace } = req.params;
+        if (!namespace) return res.status(400).json({ error: "Namespace is required" });
+
+        const chat = await Chat.findOne({ namespace });
+
+        if (!chat) {
+            return res.json({ namespace, history: [] });
+        }
+
+        res.json({ namespace, history: chat.messages });
+    } catch (error) {
+        console.error("❌ Error fetching chat history:", error);
+        res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+}
+
+module.exports = { uploadPDF, queryNamespace, getNamespaces, deleteNamespace, getChatHistory };
