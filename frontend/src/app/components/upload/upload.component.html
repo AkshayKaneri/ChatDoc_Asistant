@@ -1,0 +1,34 @@
+<div class="container">
+    <form (submit)="onSubmit()" class="p-3">
+        <div class="mb-3">
+            <label for="namespace" class="form-label fw-bold">Namespace Name</label>
+            <input type="text" id="namespace" class="form-control" [(ngModel)]="namespace" name="namespace" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="pdfUpload" class="form-label fw-bold">Upload PDF Files</label>
+            <input type="file" id="pdfUpload" class="form-control" (change)="onFileSelected($event)" multiple
+                accept=".pdf">
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger mt-2">
+            {{ errorMessage }}
+        </div>
+
+        <div *ngIf="isLoading" class="text-center my-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Uploading...</span>
+            </div>
+            <p class="mt-2 fw-bold text-primary">Uploading PDFs... Please wait.</p>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal"
+                [disabled]="isLoading">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+                {{ isLoading ? 'Uploading...' : 'Upload' }}
+            </button>
+        </div>
+    </form>
+    <div #toastContainer class="toast-container position-fixed top-0 end-0 p-3"></div>
+</div>
