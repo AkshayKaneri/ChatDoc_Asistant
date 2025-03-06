@@ -49,9 +49,9 @@ cd ChatDoc_Asistant
 cd frontend
 npm install
 ```
- **Frontend**
+ **Backend**
 ```bash
-cd frontend
+cd backend
 npm install
 ```
 
