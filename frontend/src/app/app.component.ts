@@ -76,6 +76,7 @@ export class AppComponent implements AfterViewInit {
           sender: msg.sender as 'user' | 'assistant',
           text: msg.message
         }));
+        setTimeout(() => this.scrollToBottom(), 100);
       },
       error: (error) => {
         console.error("❌ Error fetching chat history:", error);
@@ -112,6 +113,7 @@ export class AppComponent implements AfterViewInit {
     setTimeout(() => {
       this.fetchNamespaces();
       this.fetchChatHistory(namespace);
+      setTimeout(() => this.scrollToBottom(), 200);
     }, 300);
   }
 
@@ -169,9 +171,9 @@ export class AppComponent implements AfterViewInit {
     setTimeout(() => {
       if (this.chatMessagesContainer) {
         const container = this.chatMessagesContainer.nativeElement;
-
-        if (this.isUserAtBottom) {
-          container.scrollTop = container.scrollHeight;
+        const lastMessage = container.lastElementChild;
+        if (lastMessage) {
+          lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
         }
       }
     }, 100);

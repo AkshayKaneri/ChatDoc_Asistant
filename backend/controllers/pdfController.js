@@ -90,7 +90,15 @@ async function queryNamespace(req, res) {
         const searchResults = await queryPinecone(queryEmbedding, namespace, 15);
         if (!searchResults.matches.length) {
             console.log("❌ No relevant chunks found in namespace.");
-            return res.json({ answer: "I couldn't find relevant information in this namespace." });
+            const fallbackResponses = [
+                "I couldn't find anything related to that. Maybe try rephrasing?",
+                "It looks like I don't have that information yet. You can upload related documents if needed!",
+                "Hmm, I couldn't find relevant details. Try asking something else about your uploaded PDFs!",
+                "I’m here to help with document-related queries. Maybe refine your question?",
+            ];
+            const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            await saveChatMessage(namespace, "assistant", randomFallback);
+            return res.json({ answer: randomFallback });
         }
 
         let retrievedChunks = searchResults.matches.map(match => ({
@@ -120,9 +128,38 @@ async function queryNamespace(req, res) {
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [
-                { role: "system", content: "You are an AI assistant. Answer strictly based on the provided text. If the answer is not in the text, respond with 'I don't know'." },
-                { role: "user", content: `Based on this text, answer the question: "${question}"\n\nText:\n${retrievedTextForGPT}` },
-            ],
+                {
+                    role: "system",
+                    content: `You are an AI assistant specializing in answering questions based on provided text. 
+                    If the answer isn't available in the text, respond naturally rather than just saying "I don't know."
+                    - If the user's query is related but no information is found, say: "I couldn't find specific details, but you can try rephrasing or uploading related documents."
+                    - If the query is completely unrelated, say: "I'm here to assist with your uploaded PDFs. Try asking about your documents!"`
+                },
+                {
+                    role: "user",
+                    content: `You are an AI assistant trained to analyze, explain, and simplify concepts strictly based on the provided document excerpts. 
+                
+                    - Your answers must be based **ONLY** on the text below.  
+                    - If relevant details are found, respond with **clear, structured answers**.  
+                    - If the user asks for **simplified explanations**, respond in **easy-to-understand terms**.  
+                    - If the user asks for a **step-by-step breakdown**, provide a **structured response**.  
+                    - If the user asks for a **visualization or mental image**, **describe it in detail**.  
+                    - If relevant details are missing, say:  
+                      _"I couldn't find details on that in your uploaded documents. You may try rephrasing or uploading related PDFs."_  
+                    - If the question is **off-topic**, say:  
+                      _"I specialize in answering queries based on uploaded PDFs. Try asking something relevant to your documents."_  
+                
+                    **User's Question:**  
+                    "${question}"  
+                
+                    **📌 Extracted Document Data:**  
+                    ---  
+                    ${retrievedTextForGPT}  
+                    ---  
+                
+                    Now, based on the text above, provide the most **accurate, structured, and insightful** response possible.  
+                    `
+                }],
         });
 
         const responseText = aiResponse.choices[0].message.content;
