@@ -10,8 +10,12 @@ A full-stack AI-powered chatbot that enables users to upload PDFs, extract knowl
 ✅ **Chat with Documents** – AI retrieves relevant document context to generate responses.  
 ✅ **Persistent Chat History** – Stores conversation logs in MongoDB.  
 ✅ **Namespace Management** – Organize PDFs into separate chat namespaces.  
+✅ **Global Chat Mode** – Query all uploaded PDFs at once without namespace restriction.  
+✅ **AI-Optimized Responses** – Improved GPT prompt for better phrasing & natural interaction.  
+✅ **Typing Animation & Auto-Scroll** – Smooth chat experience with typing effect.  
+✅ **Improved Response Handling** – AI provides structured & simple explanations based on user requests.  
 ✅ **Real-time UI Updates** – Dynamic namespace and chat synchronization.  
-✅ **Auto-scroll & UI Enhancements** – Smooth chat experience with typing animation.  
+✅ **Enhanced Security** – Locked namespaces that users can't delete.  
 
 ---
 
@@ -88,19 +92,22 @@ ng serve
 The Angular app will run at http://localhost:4200/.
 
 ### **📝 API Endpoints**
-| Method  | Endpoint                 | Description                          |
-|---------|--------------------------|--------------------------------------|
-| **POST**   | `/upload`                | Upload PDFs & generate embeddings   |
-| **POST**   | `/query`                 | Query namespace & retrieve answers  |
-| **GET**    | `/namespaces`            | Get all available namespaces        |
-| **DELETE** | `/namespaces/delete/:ns` | Delete a namespace                  |
-| **GET**    | `/chat/history/:ns`      | Fetch chat history for a namespace  |
+| Method     | Endpoint                 |          Description                      |
+|------------|--------------------------|-------------------------------------------|
+| **POST**   | `/upload`                | Upload PDFs & generate embeddings         |
+| **POST**   | `/query`                 | Query namespace & retrieve answers        |
+| **GET**    | `/namespaces`            | Get all available namespaces              |
+| **DELETE** | `/namespaces/delete/:ns` | Delete a namespace                        |
+| **GET**    | `/chat/history/:ns`      | Fetch chat history for a namespace        |
+| **POST**   | `/global-chat/query`     | Query across all namespaces (Global Chat) |
+| **GET**    | `/global-chat/history`   | Fetch chat history for Global Chat        |
 
 ### **🎯 Future Enhancements**
-	•	User Authentication & Roles
-	•	More AI Models Support
-	•	Better UI/UX Improvements
-	•	Cloud Deployment with Docker
+	•	🛡 User Authentication & Role-Based Access Control (RBAC)
+	•	📈 AI Model Upgrades (GPT-4, Fine-tuning, etc.)
+	•	🌍 Multi-language Support
+	•	📊 Analytics Dashboard for Chat Usage
+	•	☁ Cloud Deployment with Docker & Kubernetes
 
 ## **🛠 Contributors**
 	•	[AkshayKaneri](https://github.com/AkshayKaneri)
