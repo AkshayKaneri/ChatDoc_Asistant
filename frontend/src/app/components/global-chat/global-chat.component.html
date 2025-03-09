@@ -1,0 +1,32 @@
+<div class="d-flex flex-column vh-100">
+    <!-- ✅ Chat Header -->
+    <div class="bg-primary text-white p-3 text-center">
+        <h4 class="mb-0">💬 Global Chat Assistant</h4>
+    </div>
+
+    <!-- ✅ Chat Container -->
+    <div class="d-flex flex-column flex-grow-1 overflow-hidden bg-light">
+        <!-- ✅ Chat Messages Area -->
+        <div #chatMessages class="chat-messages flex-grow-1 overflow-auto p-3">
+            <div *ngIf="messages.length === 0" class="text-center text-muted mt-5">
+                <h5>👋 Welcome to the Global Chat</h5>
+                <p>Ask anything about your documents across all namespaces.</p>
+            </div>
+
+            <div *ngFor="let msg of messages" class="chat-bubble" [class.user]="msg.sender === 'user'"
+                [class.assistant]="msg.sender === 'assistant'">
+                <span *ngIf="msg.sender === 'assistant' && msg.isTyping">⌛ Typing...</span>
+                <p>{{ msg.text }}</p>
+            </div>
+        </div>
+
+        <!-- ✅ Chat Input Box -->
+        <div class="chat-input-box">
+            <input type="text" class="form-control" placeholder="Type your message..." [(ngModel)]="userMessage"
+                (keydown.enter)="sendMessage()">
+            <button class="btn btn-primary ms-2" (click)="sendMessage()" [disabled]="isLoading">
+                {{ isLoading ? '...' : 'Send' }}
+            </button>
+        </div>
+    </div>
+</div>

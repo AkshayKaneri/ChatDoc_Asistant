@@ -1,12 +1,13 @@
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter, Routes, RouterOutlet } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
+import { NamespaceChatComponent } from './components/namespace/namespace-chat.component';
+import { GlobalChatComponent } from './components/global-chat/global-chat.component';
 
-// Import your components for routing
-import { UploadComponent } from './components/upload/upload.component';
-
-const routes: Routes = [
-  { path: '', component: UploadComponent },
+export const routes: Routes = [
+  { path: '', component: NamespaceChatComponent },
+  { path: 'chat', component: GlobalChatComponent },
+  { path: '**', redirectTo: '' }
 ];
 
 export const appConfig: ApplicationConfig = {

@@ -6,6 +6,7 @@ const chatSchema = new mongoose.Schema({
         {
             sender: { type: String, enum: ["user", "assistant"], required: true },
             message: { type: String, required: true, trim: true },
+            source: { type: Array, default: [] },
             timestamp: { type: Date, default: Date.now }
         }
     ]

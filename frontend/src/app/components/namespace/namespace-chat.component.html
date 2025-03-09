@@ -1,0 +1,86 @@
+<div class="d-flex vh-100">
+    <div *ngIf="namespaces.length > 0" class="bg-dark text-white d-flex flex-column p-3 border-end"
+        style="width: 240px;">
+        <h5 class="text-center">📂 Namespaces</h5>
+
+        <!-- ✅ Namespace List -->
+        <div class="list-group mt-3 flex-grow-1 overflow-auto">
+            <div *ngFor="let ns of namespaces" class="namespace-item w-100">
+                <button
+                    class="btn text-start w-100 px-3 py-2 d-flex align-items-center justify-content-between namespace-btn"
+                    [class.active]="selectedNamespace === ns" (click)="selectNamespace(ns)">
+                    <span class="text-truncate">{{ ns }}</span>
+                    <!-- ✅ Show Lock Icon for Locked Namespaces (No Click) -->
+                    <span *ngIf="lockedNamespaces.includes(ns)" class="lock-icon text-secondary ms-2"
+                        style="pointer-events: none;">
+                        🔒
+                    </span>
+
+                    <!-- ✅ Show Delete Icon for Other Namespaces -->
+                    <span *ngIf="!lockedNamespaces.includes(ns)" class="delete-icon text-danger ms-2"
+                        (click)="deleteNamespace(ns); $event.stopPropagation()">❌</span> </button>
+            </div>
+        </div>
+
+        <!-- ✅ Add Namespace Button (At Bottom) -->
+        <button class="btn btn-outline-light mt-3 w-100 py-2" (click)="openModal()">
+            ➕ Add Namespace
+        </button>
+    </div>
+
+    <!-- ✅ Chat Section -->
+    <div class="d-flex flex-column flex-grow-1">
+        <div class="bg-primary text-white p-3 text-center">
+            <h4 class="mb-0">{{ selectedNamespace || "Select a Namespace to Start" }}</h4>
+        </div>
+
+        <!-- ✅ Chat Container -->
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden bg-light">
+            <!-- ✅ Chat Messages Area -->
+            <div #chatMessages class="chat-messages flex-grow-1 overflow-auto p-3">
+                <!-- ✅ Show Welcome Message if No Chat History -->
+                <div *ngIf="messages.length === 0" class="text-center text-muted mt-5">
+                    <h5>👋 Welcome to {{ selectedNamespace }}</h5>
+                    <p>Start chatting or ask a question about your uploaded PDFs.</p>
+                </div>
+
+                <div *ngFor="let msg of messages" class="chat-bubble" [class.user]="msg.sender === 'user'"
+                    [class.assistant]="msg.sender === 'assistant'">
+                    <span *ngIf="msg.sender === 'assistant' && msg.isTyping">⌛ Typing...</span>
+                    <p>{{ msg.text }}</p>
+                </div>
+            </div>
+
+            <!-- ✅ Chat Input Box -->
+            <div class="chat-input-box" *ngIf="selectedNamespace">
+                <input type="text" class="form-control" placeholder="Type your message..." [(ngModel)]="userMessage"
+                    (keydown.enter)="sendMessage()">
+                <button class="btn btn-primary ms-2" (click)="sendMessage()" [disabled]="isLoading">
+                    {{ isLoading ? '...' : 'Send' }}
+                </button>
+            </div>
+
+            <!-- ✅ Placeholder for No Namespace -->
+            <div *ngIf="!selectedNamespace" class="d-flex justify-content-center align-items-center flex-grow-1">
+                <button class="btn btn-primary" (click)="openModal()">
+                    ➕ Add Namespace & Upload PDFs
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Bootstrap Modal (Popup for Upload) -->
+<div #uploadModal class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Upload PDFs & Create Namespace</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <app-upload (uploadComplete)="onNamespaceChange($event)"></app-upload>
+            </div>
+        </div>
+    </div>
+</div>
