@@ -29,4 +29,12 @@ export class ApiService {
   getChatHistory(namespace: string): Observable<{ namespace: string, history: { sender: string, message: string }[] }> {
     return this.http.get<{ namespace: string, history: { sender: string, message: string }[] }>(`${this.baseUrl}/namespaces/history/${namespace}`);
   }
+
+  queryGlobalChat(question: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/query/global`, { question });
+  }
+
+  getGlobalChatHistory(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/chat/global/history`);
+  }
 }

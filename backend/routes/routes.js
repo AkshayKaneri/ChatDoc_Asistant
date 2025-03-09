@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const { uploadPDF, queryNamespace, getNamespaces, deleteNamespace, getChatHistory } = require("../controllers/pdfController");
+const { queryGlobalChat, getGlobalChatHistory } = require("../controllers/globalChatController");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -20,5 +21,8 @@ router.delete("/namespaces/delete/:namespace", deleteNamespace);
 // 📌 API to Fetch Chat History (NEW)
 router.get("/namespaces/history/:namespace", getChatHistory);
 
+// gloabl chat
+router.post("/query/global", queryGlobalChat);
+router.get("/chat/global/history", getGlobalChatHistory);
 
 module.exports = router;
