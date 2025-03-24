@@ -24,7 +24,7 @@ async function queryGlobalChat(req, res) {
         // Query Pinecone **without restricting namespace**
         const searchResults = await queryPinecone(queryEmbedding, null, 15);
 
-        if (!searchResults.matches.length) {
+        if (!searchResults?.matches?.length) {
             console.log("❌ No relevant chunks found globally.");
 
             // Generate a more **natural fallback response**
