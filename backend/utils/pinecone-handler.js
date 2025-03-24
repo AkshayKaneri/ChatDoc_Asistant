@@ -31,12 +31,41 @@ async function storeEmbeddings(embeddings, namespace) {
 async function queryPinecone(queryEmbedding, namespace, topK = 10) {
     try {
         console.log(`🔍 Searching Pinecone in namespace '${namespace}'...`);
-        const searchResults = await index.namespace(namespace).query({
-            vector: queryEmbedding,
-            topK: topK,
-            includeMetadata: true,
-        });
+        let searchResults;
+        if (namespace) {
+            searchResults = await index.namespace(namespace).query({
+                vector: queryEmbedding,
+                topK: topK,
+                includeMetadata: true,
+            });
+        }
+        else {
 
+            const allNamespaces = ['R26_Hemodialysis_Requirements', 'R25_Hemodialysis_Requirements', 'R25 Requirements', 'R26 Requirements', 'dialysis']; // Or fetch dynamically
+            let allMatches = [];
+
+            for (const ns of allNamespaces) {
+                const nsResults = await index.namespace(ns).query({
+                    vector: queryEmbedding,
+                    topK: topK,
+                    includeMetadata: true,
+                });
+
+                if (nsResults.matches?.length) {
+                    allMatches.push(
+                        ...nsResults.matches.map(match => ({
+                            ...match,
+                            namespace: ns
+                        }))
+                    );
+                }
+            }
+            return {
+                matches: allMatches,
+                namespace: null
+            };
+            searchResults = allMatches;
+        }
         return searchResults;
     } catch (error) {
         console.error("❌ Error querying Pinecone:", error);
