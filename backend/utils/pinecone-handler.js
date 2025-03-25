@@ -60,11 +60,10 @@ async function queryPinecone(queryEmbedding, namespace, topK = 10) {
                     );
                 }
             }
-            return {
+            searchResults = {
                 matches: allMatches,
                 namespace: null
             };
-            searchResults = allMatches;
         }
         return searchResults;
     } catch (error) {

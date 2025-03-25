@@ -63,3 +63,25 @@
     margin-left: 8px;
     padding: 8px 16px;
 }
+
+.chat-bubble table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.chat-bubble th,
+.chat-bubble td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+.chat-bubble ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.chat-bubble i {
+    color: #666;
+}
