@@ -16,7 +16,8 @@
             <div *ngFor="let msg of messages" class="chat-bubble" [class.user]="msg.sender === 'user'"
                 [class.assistant]="msg.sender === 'assistant'">
                 <span *ngIf="msg.sender === 'assistant' && msg.isTyping">⌛ Typing...</span>
-                <p>{{ msg.text }}</p>
+                <div *ngIf="msg.sender === 'assistant'" [innerHTML]="sanitizeHTML(msg.text)"></div>
+                <p *ngIf="msg.sender === 'user'">{{ msg.text }}</p>
             </div>
         </div>
 

@@ -2,7 +2,7 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 @Component({
     selector: 'app-global-chat',
     standalone: true,
@@ -19,8 +19,11 @@ export class GlobalChatComponent implements AfterViewInit {
 
     @ViewChild('chatMessages') chatMessagesContainer!: ElementRef;
 
-    constructor(private apiService: ApiService) { }
+    constructor(private apiService: ApiService, private sanitizer: DomSanitizer) { }
 
+    sanitizeHTML(content: string): SafeHtml {
+        return this.sanitizer.bypassSecurityTrustHtml(content);
+    }
     ngAfterViewInit() {
         this.fetchGlobalChatHistory();
         this.scrollToBottom();

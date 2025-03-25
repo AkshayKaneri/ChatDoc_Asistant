@@ -13,11 +13,10 @@ async function queryGlobalChat(req, res) {
         console.log(`🔍 User asked: "${question}" across all namespaces`);
 
         await saveGlobalChatMessage("user", question);
-
-        // Convert question to embedding
+        const expandedQuestion = `${question}. If applicable, highlight differences, conflicts, or unique additions between namespaces or documents.`;        // Convert question to embedding
         const response = await openai.embeddings.create({
             model: "text-embedding-ada-002",
-            input: question,
+            input: expandedQuestion,
         });
         const queryEmbedding = response.data[0].embedding;
 
@@ -76,33 +75,57 @@ async function queryGlobalChat(req, res) {
 
         console.log("🤖 Generating AI response...");
         const aiResponse = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4",
             messages: [
                 {
                     role: "system",
-                    content: `You are an AI assistant specializing in answering questions based on **provided document data**.  
-                    - If relevant details are found, respond with **clear, structured answers**.  
-                    - If the user asks for **simplified explanations**, respond in **easy-to-understand terms**.  
-                    - If the user asks for a **step-by-step breakdown**, provide a **structured response**.  
-                    - If the user asks for a **visualization or mental image**, **describe it in detail**.  
-                    - If relevant details are missing, say:  
-                      _"I couldn't find details on that in your uploaded documents. You may try rephrasing or uploading related PDFs."_  
-                    - If the question is **off-topic**, say:  
-                      _"I specialize in answering queries based on uploaded PDFs. Try asking something relevant to your documents."_`
+                    content: `You are a highly skilled AI assistant trained to analyze, compare, and summarize information across multiple regulatory documents from different namespaces (e.g., R25, R26, dialysis requirements).
+                  
+                  Your responsibilities include:
+                  - Answering questions strictly based on the provided document excerpts.
+                  - Comparing and contrasting requirements across different PDFs or namespaces.
+                  - Identifying conflicts, contradictions, changes, or differences between regulations.
+                  - If the user asks about "conflicting" or "differing" requirements, analyze all relevant sources and highlight the distinctions.
+                  - If the information is not found in the provided content, respond with:  
+                    <i>I couldn't find specific details in the uploaded documents. Please try rephrasing or uploading more related PDFs.</i>
+                  - If the question is off-topic, respond with:  
+                    <i>I specialize in answering queries based on uploaded documents. Please ask something relevant to the PDFs.</i>
+                  
+                  Formatting guidelines:
+                  - You are allowed to use HTML tags such as <b>, <i>, <ul>, <li>, <table>, <tr>, <td>, and emojis 😊 to enhance clarity and visual presentation.
+                  - Format your output using proper HTML where applicable.
+                  - Prefer structured formatting like bullet points or tables when presenting comparisons or lists.
+                  - Do not return raw markdown. Only use valid HTML.
+                  
+                  Always provide clear, structured, and source-referenced answers when applicable.`
                 },
                 {
                     role: "user",
-                    content: `You are an AI assistant trained to analyze, explain, and simplify concepts strictly based on the provided document excerpts.  
-                
-                    **User's Question:**  
-                    "${question}"  
-                
-                    **📌 Extracted Data (Across Multiple Namespaces & PDFs):**  
-                    ---  
-                    ${retrievedTextForGPT}  
-                    ---  
-                
-                    Now, based on the text above, provide the most **accurate, structured, and insightful** response possible.`
+                    content: `Example:
+                  
+                  **Question:** What are the differences between R25 and R26 dialysis requirements?
+                  
+                  **Chunks:**  
+                  📌 Source: R25 Requirements | Doc1  
+                  - Patients must fast for 12 hours before treatment.  
+                  📌 Source: R26 Requirements | Doc2  
+                  - Fasting duration is 8 hours instead of 12.
+                  
+                  **Expected Answer:**  
+                  The R25 requirements specify a fasting period of 12 hours, whereas R26 has reduced it to 8 hours, indicating a relaxation in patient prep protocol.
+                  
+                  ----
+                  
+                  Now answer this:
+                  
+                  **User's Question:**  
+                  "${question}"
+                  
+                  📄 **Document Chunks from Multiple Namespaces and PDFs:**  
+                  ---  
+                  ${retrievedTextForGPT}  
+                  ---  
+                  `
                 }
             ],
         });
